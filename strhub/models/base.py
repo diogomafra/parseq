@@ -16,7 +16,7 @@
 import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 
 from nltk import edit_distance
 
@@ -44,7 +44,7 @@ class BatchResult:
     loss_numel: int
 
 
-EPOCH_OUTPUT = list[dict[str, BatchResult]]
+EPOCH_OUTPUT = List[Dict[str, BatchResult]]
 
 
 class BaseSystem(pl.LightningModule, ABC):
@@ -81,7 +81,7 @@ class BaseSystem(pl.LightningModule, ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def forward_logits_loss(self, images: Tensor, labels: list[str]) -> tuple[Tensor, Tensor, int]:
+    def forward_logits_loss(self, images: Tensor, labels: List[str]) -> Tuple[Tensor, Tensor, int]:
         """Like forward(), but also computes the loss (calls forward() internally).
 
         Args:
@@ -143,7 +143,7 @@ class BaseSystem(pl.LightningModule, ABC):
         return dict(output=BatchResult(total, correct, ned, confidence, label_length, loss, loss_numel))
 
     @staticmethod
-    def _aggregate_results(outputs: EPOCH_OUTPUT) -> tuple[float, float, float]:
+    def _aggregate_results(outputs: EPOCH_OUTPUT) -> Tuple[float, float, float]:
         if not outputs:
             return 0.0, 0.0, 0.0
         total_loss = 0
@@ -191,7 +191,7 @@ class CrossEntropySystem(BaseSystem):
         self.eos_id = tokenizer.eos_id
         self.pad_id = tokenizer.pad_id
 
-    def forward_logits_loss(self, images: Tensor, labels: list[str]) -> tuple[Tensor, Tensor, int]:
+    def forward_logits_loss(self, images: Tensor, labels: List[str]) -> Tuple[Tensor, Tensor, int]:
         targets = self.tokenizer.encode(labels, self.device)
         targets = targets[:, 1:]  # Discard <bos>
         max_len = targets.shape[1] - 1  # exclude <eos> from count
@@ -210,7 +210,7 @@ class CTCSystem(BaseSystem):
         super().__init__(tokenizer, charset_test, batch_size, lr, warmup_pct, weight_decay)
         self.blank_id = tokenizer.blank_id
 
-    def forward_logits_loss(self, images: Tensor, labels: list[str]) -> tuple[Tensor, Tensor, int]:
+    def forward_logits_loss(self, images: Tensor, labels: List[str]) -> Tuple[Tensor, Tensor, int]:
         targets = self.tokenizer.encode(labels, self.device)
         logits = self.forward(images)
         log_probs = logits.log_softmax(-1).transpose(0, 1)  # swap batch and seq. dims
