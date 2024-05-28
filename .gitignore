@@ -146,3 +146,8 @@ cython_debug/
 
 # IDE
 .idea/
+
+demo_images/
+*.onnx
+*.ckpt
+*.engine
