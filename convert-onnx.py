@@ -38,6 +38,10 @@ def main(source_ckpt: Path, simplify_model: bool) -> None:
         opset_version=14,
         input_names=["input"],
         output_names=["output"],
+        dynamic_axes={
+            "input": {0: "batch_size"},
+            "output": {0: "batch_size"},
+        },
     )
 
     print("Checking ONNX model")
